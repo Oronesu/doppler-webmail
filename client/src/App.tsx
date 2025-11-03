@@ -11,19 +11,19 @@ const [selectedMailBody, setSelectedMailBody] = useState('');
   return (
     <>
       <AuthHandler />
-      <div className="container-fluid vh-100">
-      <div className="row h-100">
+      
+      <div className="d-flex vh-100">
         <div className="col-2 p-0">
-          <Sidebar />
+          <Sidebar activeSection="inbox" />
         </div>
-        <div className="col-4 border-end p-0">
+        <div className="col-4 overflow-auto border-end">
           <MailList setSelectedMailBody={setSelectedMailBody} />
         </div>
-        <div className="col-6 p-0">
+        <div className="col-6 overflow-auto">
           <MailView body={selectedMailBody}/>
         </div>
       </div>
-    </div>
+    
     </>
   );
 }

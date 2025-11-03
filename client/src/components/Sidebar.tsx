@@ -3,19 +3,18 @@ import './Sidebar.css'; // Optionnel pour styles personnalisés
 const isAuthenticated = !!localStorage.getItem('access_token');
 
 
-const Sidebar = () => {
-  const handleLogin = () => {
-    window.location.href = 'http://localhost:3000/auth/google';
-  };
-
+const Sidebar = ({ activeSection }: { activeSection: string }) => {
   return (
-    <div className="bg-dark text-white h-100 d-flex flex-column">
-      <h4 className="text-center py-3">LOGO</h4>
-      <a href="#" className="px-3 py-2 text-white text-decoration-none">Inbox</a>
-      <a href="#" className="px-3 py-2 text-white text-decoration-none">Envoi</a>
-      <a href="#" className="px-3 py-2 text-white text-decoration-none">Brouillon</a>
-      <a href="#" className="px-3 py-2 text-white text-decoration-none">Spam</a>
-      <a href="#" className="px-3 py-2 text-white text-decoration-none">Corbeille</a>
+    <div className="d-flex flex-column justify-content-between vh-100 bg-dark text-white p-3">
+      <div>
+        <div className="mb-4 fw-bold">📩 LOGO</div>
+        <button className={`btn btn-sm w-100 text-start mb-2 ${activeSection === 'inbox' ? 'btn-primary' : 'btn-outline-light'}`}>
+          Inbox
+        </button>
+        <button className="btn btn-sm w-100 text-start mb-2 btn-outline-light">Envoi</button>
+        <button className="btn btn-sm w-100 text-start mb-2 btn-outline-light">Spam</button>
+        <button className="btn btn-sm w-100 text-start mb-2 btn-outline-light">Corbeille</button>
+      </div>
       <button
         onClick={() => {
           if (isAuthenticated) {
@@ -25,7 +24,7 @@ const Sidebar = () => {
             window.location.href = 'http://localhost:3000/auth/google'; // Connexion
           }
         }}
-        className="btn btn-primary"
+        className="btn btn-primary mt-auto"
       >
         {isAuthenticated ? 'Se déconnecter' : 'Se connecter avec Gmail'}
       </button>
