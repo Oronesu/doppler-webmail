@@ -16,7 +16,6 @@ const Sidebar = () => {
       <a href="#" className="px-3 py-2 text-white text-decoration-none">Brouillon</a>
       <a href="#" className="px-3 py-2 text-white text-decoration-none">Spam</a>
       <a href="#" className="px-3 py-2 text-white text-decoration-none">Corbeille</a>
-      
       <button
         onClick={() => {
           if (isAuthenticated) {

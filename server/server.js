@@ -40,7 +40,7 @@ app.get('/gmail/messages', async (req, res) => {
   try {
     const listResponse = await axios.get('https://gmail.googleapis.com/gmail/v1/users/me/messages', {
       headers: { Authorization: `Bearer ${access_token}` },
-      params: { maxResults: 20 } // Limite pour éviter trop d'appels
+      params: { maxResults: 20 }
     });
 
     const messages = listResponse.data.messages || [];
@@ -51,10 +51,17 @@ app.get('/gmail/messages', async (req, res) => {
       });
 
       const headers = detailRes.data.payload.headers;
-      const subjectHeader = headers.find(h => h.name === 'Subject');
-      const subject = subjectHeader ? subjectHeader.value : '(Sans sujet)';
 
-      return { id: msg.id, subject };
+      const subject = headers.find(h => h.name === 'Subject')?.value || '(Sans sujet)';
+      const from = headers.find(h => h.name === 'From')?.value || 'Expéditeur inconnu';
+      const date = headers.find(h => h.name === 'Date')?.value || '';
+
+      return {
+        id: msg.id,
+        subject,
+        from,
+        date
+      };
     }));
 
     res.json(detailedMessages);
@@ -63,6 +70,7 @@ app.get('/gmail/messages', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 

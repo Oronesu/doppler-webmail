@@ -9,40 +9,72 @@ const MailList = () => {
     console.log('[Gmail] Token récupéré du localStorage:', token);
 
     if (token) {
-        axios.get(`http://localhost:3000/gmail/messages?access_token=${token}`)
-    .then(res => {
-      const messages = res.data; 
-      console.log('[Gmail] Nombre de messages:', messages?.length);
-      if (messages?.length > 0) {
-        console.log('[Gmail] Premier message ID:', messages[0].id);
-      } else {
-        console.warn('[Gmail] Aucun message reçu');
-      }
-      setMessages(messages);
-    })
-    .catch(err => {
-      console.error('[Gmail] Erreur lors de la récupération des mails:', err);
-    });
-
+      axios
+        .get(`http://localhost:3000/gmail/messages?access_token=${token}`)
+        .then((res) => {
+          const messages = res.data;
+          console.log('[Gmail] Nombre de messages:', messages?.length);
+          setMessages(messages);
+        })
+        .catch((err) => {
+          console.error('[Gmail] Erreur lors de la récupération des mails:', err);
+        });
     } else {
       console.warn('[Gmail] Aucun token trouvé dans localStorage');
     }
   }, []);
 
+const formatDate = (rawDate: string) => {
+  const date = new Date(rawDate);
+  if (isNaN(date.getTime())) return 'Date invalide';
+
+  const now = new Date();
+
+  const isSameDay =
+    date.getDate() === now.getDate() &&
+    date.getMonth() === now.getMonth() &&
+    date.getFullYear() === now.getFullYear();
+
+  const isSameYear = date.getFullYear() === now.getFullYear();
+
+  if (isSameDay) {
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  if (isSameYear) {
+    return date.toLocaleDateString('fr-FR', {
+      day: 'numeric',
+      month: 'short',
+    });
+  }
+
+  return date.toLocaleDateString('fr-FR'); // JJ/MM/AAAA
+};
+
 
   return (
-    <div className="overflow-auto p-3">
-      <h5>Inbox</h5>
-          <ul>
-            {Array.isArray(messages) && messages.length > 0 ? (
-              messages.map((msg: any) => (
-                <li key={msg.id}>{msg.subject || '(Sans sujet)'}</li>
-              ))
-            ) : (
-              <li className="text-muted">Aucun message à afficher</li>
-            )}
-          </ul>
-
+    <div className="container mt-4">
+      <h5 className="mb-3">📥 Inbox</h5>
+      {Array.isArray(messages) && messages.length > 0 ? (
+        <div className="list-group">
+          {messages.map((msg: any) => (
+            <div key={msg.id} className="list-group-item list-group-item-action">
+              <div className="d-flex justify-content-between">
+                <h6 className="mb-1">{msg.subject || '(Sans sujet)'}</h6>
+                <small className="text-muted">{formatDate(msg.date)}</small>
+              </div>
+              <p className="mb-0 text-secondary">
+                <strong>De :</strong> {msg.from}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="alert alert-secondary">Aucun message à afficher</div>
+      )}
     </div>
   );
 };
