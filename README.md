@@ -9,7 +9,7 @@ Une application web minimaliste pour consulter ses mails Gmail via OAuth2 et l�
 ### 1. Cloner le dépôt
 
 ```bash
-git clone https://github.com/JeanDev/doppler-webmail.git
+git clone https://github.com/Oronesu/doppler-webmail.git
 cd doppler-webmail
 ```
 
