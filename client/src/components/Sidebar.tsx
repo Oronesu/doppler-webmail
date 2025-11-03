@@ -1,5 +1,8 @@
 import './Sidebar.css'; // Optionnel pour styles personnalisés
 
+const isAuthenticated = !!localStorage.getItem('access_token');
+
+
 const Sidebar = () => {
   const handleLogin = () => {
     window.location.href = 'http://localhost:3000/auth/google';
@@ -13,9 +16,21 @@ const Sidebar = () => {
       <a href="#" className="px-3 py-2 text-white text-decoration-none">Brouillon</a>
       <a href="#" className="px-3 py-2 text-white text-decoration-none">Spam</a>
       <a href="#" className="px-3 py-2 text-white text-decoration-none">Corbeille</a>
-      <button className="btn btn-danger w-100 mt-auto" onClick={handleLogin}>
-        Se connecter avec Gmail
+      
+      <button
+        onClick={() => {
+          if (isAuthenticated) {
+            localStorage.removeItem('access_token');
+            window.location.href = '/'; // Déconnexion
+          } else {
+            window.location.href = 'http://localhost:3000/auth/google'; // Connexion
+          }
+        }}
+        className="btn btn-primary"
+      >
+        {isAuthenticated ? 'Se déconnecter' : 'Se connecter avec Gmail'}
       </button>
+
     </div>
   );
 };

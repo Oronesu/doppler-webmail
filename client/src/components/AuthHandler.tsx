@@ -14,6 +14,7 @@ const AuthHandler = () => {
             console.log('[OAuth] Token reçu:', accessToken?.slice(0, 15) + '...');
             if (accessToken) {
             localStorage.setItem('access_token', accessToken);
+            window.location.href = '/'; // Recharge l’application après connexion
             console.log('[OAuth] Token stocké dans localStorage');
             window.history.replaceState({}, '', '/');
             } else {
