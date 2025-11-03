@@ -1,15 +1,12 @@
 
-const MailView = () => {
+const MailView = ({ body }: { body: string }) => {
   return (
-    <div className="h-100 px-3 py-4" style={{
-      backgroundImage: 'url("/logo.png")',
-      backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'center',
-      backgroundSize: 'contain'
-    }}>
-      <p className="text-muted">Zone affichage / édition</p>
+    <div className="p-3 border-start">
+      <div dangerouslySetInnerHTML={{ __html: body }} />
     </div>
   );
 };
 
+
 export default MailView;
+

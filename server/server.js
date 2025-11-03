@@ -72,6 +72,42 @@ app.get('/gmail/messages', async (req, res) => {
 });
 
 
+// Route pour récupérer le corps d'un email spécifique
+app.get('/gmail/messages/:id', async (req, res) => {
+  const { access_token } = req.query;
+  const { id } = req.params;
+
+  try {
+    const detailRes = await axios.get(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}`, {
+      headers: { Authorization: `Bearer ${access_token}` }
+    });
+
+    const payload = detailRes.data.payload;
+
+    // Fonction récursive pour trouver le corps HTML ou texte
+    const findBody = (part) => {
+    if (part.mimeType === 'text/html' && part.body?.data) {
+        return Buffer.from(part.body.data, 'base64').toString('utf-8');
+    }
+    if (part.parts) {
+        for (const subPart of part.parts) {
+        const result = findBody(subPart);
+        if (result) return result;
+        }
+    }
+    return null;
+    };
+
+    const body = findBody(payload) || '[Corps du message non disponible]';
+
+    res.json({ body });
+  } catch (err) {
+    console.error('[Backend] Erreur récupération corps du mail:', err.response?.data || err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 
 
 app.listen(3000, () => console.log('✅ Backend running on http://localhost:3000'));

@@ -1,10 +1,13 @@
-
+import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import MailList from './components/MailList';
 import MailView from './components/MailView';
 import AuthHandler from './components/AuthHandler';
 
+
 function App() {
+  
+const [selectedMailBody, setSelectedMailBody] = useState('');
   return (
     <>
       <AuthHandler />
@@ -14,10 +17,10 @@ function App() {
           <Sidebar />
         </div>
         <div className="col-4 border-end p-0">
-          <MailList />
+          <MailList setSelectedMailBody={setSelectedMailBody} />
         </div>
         <div className="col-6 p-0">
-          <MailView />
+          <MailView body={selectedMailBody}/>
         </div>
       </div>
     </div>
