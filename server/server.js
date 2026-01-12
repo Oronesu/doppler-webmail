@@ -107,6 +107,38 @@ app.get('/gmail/messages/:id', async (req, res) => {
   }
 });
 
+// Route pour envoyer un email
+app.post('/gmail/send', async (req, res) => {
+  const { access_token } = req.query;
+  const { to, subject, body } = req.body;
+
+  const rawMessage = [
+    `To: ${to}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    `Subject: ${subject}`,
+    '',
+    body,
+  ].join('\n');
+
+  const encodedMessage = Buffer.from(rawMessage)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  try {
+    await axios.post(
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+      { raw: encodedMessage },
+      { headers: { Authorization: `Bearer ${access_token}` } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[Backend] Erreur envoi mail:', err.response?.data || err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 
 
