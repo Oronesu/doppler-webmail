@@ -9,7 +9,7 @@ import SentList from './components/SentList';
 
 
 function App() {
-  const [activeSection, setActiveSection] = useState<'inbox' | 'envoi'>('inbox');
+  const [activeSection, setActiveSection] = useState<'inbox' | 'envoi' | 'spam' | 'corbeille'>('inbox');
   const [selectedMailBody, setSelectedMailBody] = useState('');
 
   return (
@@ -22,13 +22,22 @@ function App() {
         </div>
 
         <div className="col-5 overflow-auto border-end">
-          {activeSection === 'inbox' ? (
-            <MailList setSelectedMailBody={setSelectedMailBody} />
-          ) : (
-            <SentList />
-          )}
-        </div>
+        {activeSection === 'inbox' && (
+          <MailList setSelectedMailBody={setSelectedMailBody} />
+        )}
 
+        {activeSection === 'envoi' && (
+          <SentList />
+        )}
+
+        {activeSection === 'spam' && (
+          <MailList setSelectedMailBody={setSelectedMailBody} label="SPAM" />
+        )}
+
+        {activeSection === 'corbeille' && (
+          <MailList setSelectedMailBody={setSelectedMailBody} label="TRASH" />
+        )}
+      </div>
         <div className="col-5 overflow-auto">
           {activeSection === 'inbox' ? (
             <MailView body={selectedMailBody} />

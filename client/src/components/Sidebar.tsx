@@ -1,8 +1,8 @@
 import './Sidebar.css';
 
 type SidebarProps = {
-  activeSection: 'inbox' | 'envoi';
-  setActiveSection: (section: 'inbox' | 'envoi') => void;
+  activeSection: 'inbox' | 'envoi' | 'spam' | 'corbeille';
+  setActiveSection: (section: 'inbox' | 'envoi' | 'spam' | 'corbeille') => void;
 };
 
 const Sidebar = ({ activeSection, setActiveSection }: SidebarProps) => {
@@ -31,8 +31,19 @@ const Sidebar = ({ activeSection, setActiveSection }: SidebarProps) => {
           Envoi
         </button>
 
-        <button className="btn btn-sm w-100 text-start mb-2 btn-outline-light">Spam</button>
-        <button className="btn btn-sm w-100 text-start mb-2 btn-outline-light">Corbeille</button>
+        <button
+          className={`btn btn-sm w-100 text-start mb-2 ${activeSection === 'spam' ? 'btn-primary' : 'btn-outline-light'}`}
+          onClick={() => setActiveSection('spam')}
+        >
+          Spam
+        </button>
+
+        <button
+          className={`btn btn-sm w-100 text-start mb-2 ${activeSection === 'corbeille' ? 'btn-primary' : 'btn-outline-light'}`}
+          onClick={() => setActiveSection('corbeille')}
+        >
+          Corbeille
+        </button>
       </div>
 
       <button
