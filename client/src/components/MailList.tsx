@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const MailList = ({ setSelectedMailBody }: { setSelectedMailBody: (body: string) => void }) => {
+const MailList = ({setSelectedMailBody,setIsComposing,label}: {setSelectedMailBody: (body: string) => void;setIsComposing: (value: boolean) => void;label?: string;}) => {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
@@ -10,7 +10,7 @@ const MailList = ({ setSelectedMailBody }: { setSelectedMailBody: (body: string)
 
     if (token) {
       axios
-        .get(`http://localhost:3000/gmail/messages?access_token=${token}`)
+        .get(`http://localhost:3000/gmail/messages?access_token=${token}${label ? `&labelIds=${label}` : ''}`)
         .then((res) => {
           const messages = res.data;
           console.log('[Gmail] Nombre de messages:', messages?.length);
@@ -24,11 +24,13 @@ const MailList = ({ setSelectedMailBody }: { setSelectedMailBody: (body: string)
     }
   }, []);
 
-  const handleClick = async (id: string) => {
+const handleClick = async (id: string) => {
+  setIsComposing(false);
   const token = localStorage.getItem('access_token');
-  const res = await axios.get(`http://localhost:3000/gmail/messages/${id}?access_token=${token}`);
+  const res = await axios.get(`http://localhost:3000/gmail/message?access_token=${token}&id=${id}`);
   setSelectedMailBody(res.data.body);
-  };
+};
+
 
 
 
@@ -63,12 +65,15 @@ const MailList = ({ setSelectedMailBody }: { setSelectedMailBody: (body: string)
   };
 
 
-
-
   
   return (
     <div className="container mt-4">
-      <h5 className="mb-3">📥 Inbox</h5>
+      <h5 className="mb-3">
+      {label === 'SPAM' && '🚫 Spam'}
+      {label === 'TRASH' && '🗑️ Corbeille'}
+      {!label && '📥 Inbox'}
+      </h5>
+
       {Array.isArray(messages) && messages.length > 0 ? (
         <div className="list-group">
           {messages.map((msg: any) => (
