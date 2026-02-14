@@ -10,7 +10,11 @@ app.use(express.json());
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
 
 app.get('/auth/google', (req, res) => {
-  const scope = encodeURIComponent('https://www.googleapis.com/auth/gmail.readonly');
+  const scope = encodeURIComponent([
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.modify'
+].join(' '));
   const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=${scope}&access_type=offline`;
   res.redirect(url);
 });
@@ -136,11 +140,12 @@ app.post('/gmail/send', async (req, res) => {
 
   const rawMessage = [
     `To: ${to}`,
-    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Type: text/html; charset=UTF-8',
     `Subject: ${subject}`,
     '',
-    body,
+    body, // HTML TinyMCE
   ].join('\n');
+
 
   const encodedMessage = Buffer.from(rawMessage)
     .toString('base64')

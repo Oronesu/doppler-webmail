@@ -3,9 +3,16 @@ import './Sidebar.css';
 type SidebarProps = {
   activeSection: 'inbox' | 'envoi' | 'spam' | 'corbeille';
   setActiveSection: (section: 'inbox' | 'envoi' | 'spam' | 'corbeille') => void;
+  setIsComposing: (value: boolean) => void;
+  setSelectedMailBody: (body: string) => void;
 };
 
-const Sidebar = ({ activeSection, setActiveSection }: SidebarProps) => {
+const Sidebar = ({
+  activeSection,
+  setActiveSection,
+  setIsComposing,
+  setSelectedMailBody,
+}: SidebarProps) => {
   const isAuthenticated = !!localStorage.getItem('access_token');
 
   return (
@@ -32,17 +39,32 @@ const Sidebar = ({ activeSection, setActiveSection }: SidebarProps) => {
         </button>
 
         <button
-          className={`btn btn-sm w-100 text-start mb-2 ${activeSection === 'spam' ? 'btn-primary' : 'btn-outline-light'}`}
+          className={`btn btn-sm w-100 text-start mb-2 ${
+            activeSection === 'spam' ? 'btn-primary' : 'btn-outline-light'
+          }`}
           onClick={() => setActiveSection('spam')}
         >
           Spam
         </button>
 
         <button
-          className={`btn btn-sm w-100 text-start mb-2 ${activeSection === 'corbeille' ? 'btn-primary' : 'btn-outline-light'}`}
+          className={`btn btn-sm w-100 text-start mb-2 ${
+            activeSection === 'corbeille' ? 'btn-primary' : 'btn-outline-light'
+          }`}
           onClick={() => setActiveSection('corbeille')}
         >
           Corbeille
+        </button>
+
+        <button
+          className="btn btn-primary w-100 mb-3"
+          onClick={() => {
+            setActiveSection('envoi');   // on se place dans la section Envoi
+            setIsComposing(true);        // on affiche le composer
+            setSelectedMailBody('');     // on vide le contenu affiché
+          }}
+        >
+          ✉️ Nouveau message
         </button>
       </div>
 

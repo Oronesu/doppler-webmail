@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
-const MailList = ({ setSelectedMailBody, label }: { setSelectedMailBody: (body: string) => void; label?: string; }) => {
+const MailList = ({setSelectedMailBody,setIsComposing,label}: {setSelectedMailBody: (body: string) => void;setIsComposing: (value: boolean) => void;label?: string;}) => {
   const [messages, setMessages] = useState([]);
 
   useEffect(() => {
@@ -25,10 +25,12 @@ const MailList = ({ setSelectedMailBody, label }: { setSelectedMailBody: (body: 
   }, []);
 
 const handleClick = async (id: string) => {
+  setIsComposing(false);
   const token = localStorage.getItem('access_token');
   const res = await axios.get(`http://localhost:3000/gmail/message?access_token=${token}&id=${id}`);
   setSelectedMailBody(res.data.body);
 };
+
 
 
 
