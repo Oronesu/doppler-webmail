@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 app.use(cors());
@@ -134,37 +136,138 @@ app.get('/gmail/message', async (req, res) => {
 
 
 // Route pour envoyer un email
-app.post('/gmail/send', async (req, res) => {
-  const { access_token } = req.query;
-  const { to, subject, body } = req.body;
 
-  const rawMessage = [
-    `To: ${to}`,
-    'Content-Type: text/html; charset=UTF-8',
-    `Subject: ${subject}`,
-    '',
-    body, // HTML TinyMCE
-  ].join('\n');
-
-
-  const encodedMessage = Buffer.from(rawMessage)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
+app.post('/gmail/send', upload.array('attachments'), async (req, res) => {
   try {
+    const { access_token } = req.query;
+    const { to, subject, body } = req.body;
+    const files = req.files || [];
+
+    console.log("📨 Champs reçus :", req.body);
+    console.log("📎 Fichiers reçus :", files.map(f => f.originalname));
+
+    if (!to || !subject || !body) {
+      return res.status(400).json({ error: "Champs manquants" });
+    }
+
+    // Construction du message MIME
+    let boundary = "my_boundary_" + Date.now();
+
+    let mimeParts = [];
+
+    // Partie HTML
+    mimeParts.push(
+      `--${boundary}\r\n` +
+      `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+      `${body}\r\n`
+    );
+
+    // Pièces jointes
+    for (const file of files) {
+      const base64File = file.buffer.toString("base64");
+
+      mimeParts.push(
+        `--${boundary}\r\n` +
+        `Content-Type: ${file.mimetype}; name="${file.originalname}"\r\n` +
+        `Content-Disposition: attachment; filename="${file.originalname}"\r\n` +
+        `Content-Transfer-Encoding: base64\r\n\r\n` +
+        `${base64File}\r\n`
+      );
+    }
+
+    mimeParts.push(`--${boundary}--`);
+
+    const rawMessage =
+      `To: ${to}\r\n` +
+      `Subject: ${subject}\r\n` +
+      `MIME-Version: 1.0\r\n` +
+      `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n` +
+      mimeParts.join("");
+
+    const encodedMessage = Buffer.from(rawMessage)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    // Envoi via Gmail API
     await axios.post(
-      'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
       { raw: encodedMessage },
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
+
     res.json({ success: true });
+
   } catch (err) {
-    console.error('[Backend] Erreur envoi mail:', err.response?.data || err.message);
-    res.status(500).json({ error: err.message });
+    console.error("[Backend] Erreur envoi mail:", err.response?.data || err);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 });
+
+
+
+
+// Route pour scanner un fichier avec VirusTotal
+app.post('/scan', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ error: "Aucun fichier reçu" });
+    }
+
+    // 1) Upload du fichier à VirusTotal
+    const formData = new FormData();
+    formData.append("file", new Blob([file.buffer]), file.originalname);
+
+    const uploadRes = await fetch("https://www.virustotal.com/api/v3/files", {
+      method: "POST",
+      headers: {
+        "x-apikey": process.env.VIRUSTOTAL_API_KEY
+      },
+      body: formData
+    });
+
+    const uploadData = await uploadRes.json();
+    const analysisId = uploadData.data.id;
+
+    // 2) Polling jusqu'à ce que l'analyse soit terminée
+    let analysis;
+    while (true) {
+      const analysisRes = await fetch(
+        `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+        {
+          headers: {
+            "x-apikey": process.env.VIRUSTOTAL_API_KEY
+          }
+        }
+      );
+
+      const analysisData = await analysisRes.json();
+      const status = analysisData.data.attributes.status;
+
+      if (status === "completed") {
+        analysis = analysisData.data.attributes.stats;
+        break;
+      }
+
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+
+    // 3) Déterminer si le fichier est safe
+    const safe = analysis.malicious === 0 && analysis.suspicious === 0;
+
+    res.json({
+      safe,
+      stats: analysis
+    });
+
+  } catch (err) {
+    console.error("Erreur VirusTotal:", err);
+    res.status(500).json({ error: "Erreur analyse VirusTotal" });
+  }
+});
+
 
 
 app.listen(3000, () => console.log('✅ Backend running on http://localhost:3000'));
