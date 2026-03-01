@@ -4,6 +4,7 @@ import MailList from './components/MailList';
 import MailView from './components/MailView';
 import AuthHandler from './components/AuthHandler';
 import MailComposer from './components/MailComposer';
+import './App.css';
 
 function App() {
   const [activeSection, setActiveSection] = useState<'inbox' | 'envoi' | 'spam' | 'corbeille'>('inbox');

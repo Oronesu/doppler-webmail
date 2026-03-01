@@ -208,58 +208,52 @@ app.post('/gmail/send', upload.array('attachments'), async (req, res) => {
 
 
 
-// Route pour scanner un fichier avec VirusTotal
+const crypto = require("crypto");
+
 app.post('/scan', upload.single('file'), async (req, res) => {
   try {
     const file = req.file;
-    if (!file) {
-      return res.status(400).json({ error: "Aucun fichier reçu" });
-    }
+    if (!file) return res.status(400).json({ error: "Aucun fichier reçu" });
 
-    // 1) Upload du fichier à VirusTotal
+    // SHA‑256 du fichier
+    const sha256 = crypto.createHash("sha256").update(file.buffer).digest("hex");
+
+    // Upload VirusTotal
     const formData = new FormData();
     formData.append("file", new Blob([file.buffer]), file.originalname);
 
     const uploadRes = await fetch("https://www.virustotal.com/api/v3/files", {
       method: "POST",
-      headers: {
-        "x-apikey": process.env.VIRUSTOTAL_API_KEY
-      },
+      headers: { "x-apikey": process.env.VIRUSTOTAL_API_KEY },
       body: formData
     });
 
     const uploadData = await uploadRes.json();
     const analysisId = uploadData.data.id;
 
-    // 2) Polling jusqu'à ce que l'analyse soit terminée
+    // Polling en attendant la fin de l'analyse
     let analysis;
     while (true) {
       const analysisRes = await fetch(
         `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
-        {
-          headers: {
-            "x-apikey": process.env.VIRUSTOTAL_API_KEY
-          }
-        }
+        { headers: { "x-apikey": process.env.VIRUSTOTAL_API_KEY } }
       );
 
       const analysisData = await analysisRes.json();
-      const status = analysisData.data.attributes.status;
-
-      if (status === "completed") {
+      if (analysisData.data.attributes.status === "completed") {
         analysis = analysisData.data.attributes.stats;
         break;
       }
-
-      await new Promise((r) => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 1500));
     }
 
-    // 3) Déterminer si le fichier est safe
     const safe = analysis.malicious === 0 && analysis.suspicious === 0;
 
     res.json({
       safe,
-      stats: analysis
+      stats: analysis,
+      sha256,
+      analysisId
     });
 
   } catch (err) {
@@ -267,6 +261,7 @@ app.post('/scan', upload.single('file'), async (req, res) => {
     res.status(500).json({ error: "Erreur analyse VirusTotal" });
   }
 });
+
 
 
 
