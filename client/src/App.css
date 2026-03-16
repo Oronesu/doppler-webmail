@@ -37,3 +37,40 @@
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+
+.mailview-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.mailview-header {
+  flex: 0 0 12%; /* entre 10 et 15% */
+  padding: 15px;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+}
+
+.mailview-subject {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.mailview-meta {
+  margin-top: 5px;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.mailview-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+}
+
+.mailview-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+}
