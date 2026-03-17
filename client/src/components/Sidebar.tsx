@@ -24,7 +24,7 @@ const Sidebar = ({
   const isAuthenticated = !!localStorage.getItem('access_token');
 
   return (
-    <div className="d-flex flex-column justify-content-between vh-100 bg-dark text-white p-3">
+    <div className="sidebar d-flex flex-column justify-content-between p-3">
       <div>
         <div className="mb-4 fw-bold">📩 LOGO</div>
 

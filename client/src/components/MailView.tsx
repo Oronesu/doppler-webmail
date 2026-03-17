@@ -16,41 +16,43 @@ interface MailViewProps {
 
 const MailView = ({ subject, from, to, body, attachments, onReply, onForward, onDelete }: MailViewProps) => {
   return (
-    <div className="mailview-container">
+<div className="mailview">
 
-      <div className="mailview-header">
-        <h4 className="mailview-subject">{subject}</h4>
-
-        <div className="mailview-meta">
-          <p><strong>De :</strong> {from}</p>
-          <p><strong>À :</strong> {to}</p>
-        </div>
-
-        <div className="mailview-actions">
-          <button className="btn btn-outline-primary" onClick={onReply}>↩ Répondre</button>
-          <button className="btn btn-outline-secondary" onClick={onForward}>⤳ Transférer</button>
-          <button className="btn btn-outline-danger" onClick={onDelete}>🗑 Supprimer</button>
-        </div>
-
-      </div>
-      {attachments && attachments.length > 0 && (
-        <div className="mailview-attachments">
-          <h6>📎 Pièces jointes</h6>
-          <ul>
-            {attachments.map((att, index) => (
-              <li key={index}>
-                <a href={att.url} download={att.filename}>
-                  {att.filename}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-
-      <div className="mailview-body" dangerouslySetInnerHTML={{ __html: body }} />
+  {/* TOPBAR */}
+  <div className="mailview-topbar">
+    <div className="left">
+      <span className="logo">📩</span>
+      <h5>{subject || "Aucun message sélectionné"}</h5>
     </div>
+
+    <div className="actions">
+      <button onClick={onReply}>↩</button>
+      <button onClick={onForward}>⤳</button>
+      <button onClick={onDelete}>🗑</button>
+    </div>
+
+  </div>
+
+  {/* CONTENU */}
+  <div className="mailview-content">
+    <p><strong>De :</strong> {from}</p>
+    <p><strong>À :</strong> {to}</p>
+
+    {attachments.length > 0 && (
+      <div className="attachments">
+        {attachments.map((a, i) => (
+          <a key={i} href={a.url} download={a.filename}>{a.filename}</a>
+        ))}
+      </div>
+    )}
+
+    <div
+      className="mailview-body"
+      dangerouslySetInnerHTML={{ __html: body }}
+    />
+  </div>
+
+</div>
   );
 };
 

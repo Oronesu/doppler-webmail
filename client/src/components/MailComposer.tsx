@@ -177,22 +177,29 @@ const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" })
 
 
       {/* FORMULAIRE */}
-      <div className="p-3">
-        <h5>✉️ Nouveau message</h5>
+      <div className="composer-container">
+        <div className="composer-topbar">
+          <div className="left">
+            <span className="icon">✉️</span>
+            <h5>Nouveau message</h5>
+          </div>
+        </div>
+
 
         <input
-          className="form-control mb-2"
+          className="composer-input"
           placeholder="À"
           value={to}
           onChange={(e) => setTo(e.target.value)}
         />
 
         <input
-          className="form-control mb-2"
+          className="composer-input"
           placeholder="Sujet"
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
         />
+
 
         <Editor
           apiKey={import.meta.env.VITE_TINYMCE_API_KEY}
@@ -208,40 +215,40 @@ const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" })
           }}
         />
 
-        <input
-          type="file"
-          multiple
-          onChange={(e) => {
-            const files = (e.target as HTMLInputElement).files;
-            if (files) setAttachments(Array.from(files));
-          }}
-        />
+        <div className="composer-footer">
+          <div className="left">
+            <input
+              type="file"
+              multiple
+              onChange={(e) => {
+                const files = (e.target as HTMLInputElement).files;
+                if (files) setAttachments(Array.from(files));
+              }}
+            />
 
-        <label className="mt-2">
-          <input
-            type="checkbox"
-            checked={scanRequested}
-            onChange={() => setScanRequested(!scanRequested)}
-          />
-          Vérifier les pièces jointes avec VirusTotal
-        </label>
+            <label className="vt-check">
+              <input
+                type="checkbox"
+                checked={scanRequested}
+                onChange={() => setScanRequested(!scanRequested)}
+              />
+              Vérifier avec VirusTotal
+            </label>
+          </div>
 
-        <p className="text-muted">
-          (Les fichiers seront envoyés à un service externe de sécurité.)
-        </p>
-
-        <button
-          className="btn btn-primary mt-3"
-          onClick={() => {
-            if (scanRequested && attachments.length > 0) {
-              setShowPrivacyPopup(true);
-            } else {
-              handleSend(false);
-            }
-          }}
-        >
-          Envoyer
-        </button>
+          <button
+            className="btn-send"
+            onClick={() => {
+              if (scanRequested && attachments.length > 0) {
+                setShowPrivacyPopup(true);
+              } else {
+                handleSend(false);
+              }
+            }}
+          >
+            Envoyer
+          </button>
+        </div>
       </div>
     </>
   );

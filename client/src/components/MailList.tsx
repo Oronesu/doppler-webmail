@@ -97,15 +97,16 @@ useEffect(() => {
   };
 
   return (
-    <div className="container mt-4">
-      <h5 className="mb-3">
-        {label === 'SPAM' && '🚫 Spam'}
-        {label === 'TRASH' && '🗑️ Corbeille'}
-        {!label && '📥 Inbox'}
-      </h5>
+  <div className="maillist-container">
+    <h5 className="maillist-title">
+      {label === "SPAM" && "🚫 Spam"}
+      {label === "TRASH" && "🗑️ Corbeille"}
+      {!label && "📥 Inbox"}
+    </h5>
 
+    <div className="maillist-scroll">
       {messages.length > 0 ? (
-        <div className="list-group">
+        <div className="list-group no-radius">
           {messages.map((msg: any) => (
             <div
               key={msg.id}
@@ -113,8 +114,8 @@ useEffect(() => {
               onClick={() => handleClick(msg.id)}
             >
               <div className="d-flex justify-content-between">
-                <h6 className="mb-1">{msg.subject || '(Sans sujet)'}</h6>
-                <small className="text-muted">{formatDate(msg.date)}</small>
+                <h6 className="mb-1">{msg.subject || "(Sans sujet)"}</h6>
+                <small className="text-muted">{msg.date}</small>
               </div>
               <p className="mb-0 text-secondary">
                 <strong>De :</strong> {msg.from}
@@ -126,7 +127,9 @@ useEffect(() => {
         <div className="alert alert-secondary">Aucun message à afficher</div>
       )}
     </div>
-  );
+  </div>
+);
+
 };
 
 export default MailList;
