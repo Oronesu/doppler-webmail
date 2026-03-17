@@ -6,10 +6,10 @@ import Modal from "./Modal";
 
 
 
-const MailComposer = () => {
-  const [to, setTo] = useState('');
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
+const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" }) => {
+  const [to, setTo] = useState(initialTo);
+  const [subject, setSubject] = useState(initialSubject);
+  const [body, setBody] = useState(initialBody);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [scanRequested, setScanRequested] = useState(true);
   const [scanResults, setScanResults] = useState<Array<{ file: File; safe: boolean; stats: any; sha256: string; analysisId: string }>>([]);

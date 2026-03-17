@@ -11,6 +11,7 @@ app.use(express.json());
 
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
 
+
 app.get('/auth/google', (req, res) => {
   const scope = encodeURIComponent([
   'https://www.googleapis.com/auth/gmail.readonly',
@@ -69,18 +70,19 @@ app.get('/gmail/messages', async (req, res) => {
         );
 
         const headers = detailRes.data.payload.headers;
-
         const subject = headers.find(h => h.name === 'Subject')?.value || '(Sans sujet)';
         const from = headers.find(h => h.name === 'From')?.value || 'Expéditeur inconnu';
         const to = headers.find(h => h.name === 'To')?.value || '';
         const date = headers.find(h => h.name === 'Date')?.value || '';
+        const labelIdsMsg = detailRes.data.labelIds || [];
 
         return {
           id: msg.id,
           subject,
           from,
           to,
-          date
+          date,
+          labelIds: labelIdsMsg
         };
       })
     );
@@ -109,10 +111,14 @@ app.get('/gmail/message', async (req, res) => {
     );
 
     const payload = detailRes.data.payload;
+    const headers = payload.headers || [];
 
-    // Extraction directe sans fonction findBody
+    const subject = headers.find(h => h.name === 'Subject')?.value || '(Sans sujet)';
+    const from = headers.find(h => h.name === 'From')?.value || 'Expéditeur inconnu';
+    const to = headers.find(h => h.name === 'To')?.value || '';
+
+    // Corps
     let body = '';
-
     if (payload.body?.data) {
       body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
     } else if (payload.parts) {
@@ -127,12 +133,40 @@ app.get('/gmail/message', async (req, res) => {
       }
     }
 
-    res.json({ body });
+    // Pièces jointes
+    let attachments = [];
+
+    function extractAttachments(parts) {
+      if (!parts) return;
+      for (const part of parts) {
+        if (part.filename && part.body && part.body.attachmentId) {
+          attachments.push({
+            filename: part.filename,
+            mimeType: part.mimeType,
+            url: `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/attachments/${part.body.attachmentId}?access_token=${access_token}`
+          });
+        }
+        if (part.parts) extractAttachments(part.parts);
+      }
+    }
+
+    extractAttachments(payload.parts);
+
+    res.json({
+      id,
+      subject,
+      from,
+      to,
+      body,
+      attachments
+    });
+
   } catch (err) {
     console.error('[Backend] Erreur récupération corps mail:', err.response?.data || err.message);
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // Route pour envoyer un email
@@ -263,6 +297,22 @@ app.post('/scan', upload.single('file'), async (req, res) => {
 });
 
 
+app.post('/gmail/moveToTrash', async (req, res) => {
+  const { access_token, id } = req.query;
+
+  try {
+    await axios.post(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/trash`,
+      {},
+      { headers: { Authorization: `Bearer ${access_token}` } }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Erreur suppression:", err.response?.data || err);
+    res.status(500).json({ error: "Erreur suppression" });
+  }
+});
 
 
 app.listen(3000, () => console.log('✅ Backend running on http://localhost:3000'));

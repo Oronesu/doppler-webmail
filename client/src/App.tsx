@@ -5,11 +5,43 @@ import MailView from './components/MailView';
 import AuthHandler from './components/AuthHandler';
 import MailComposer from './components/MailComposer';
 import './App.css';
+import axios from 'axios';
+
 
 function App() {
   const [activeSection, setActiveSection] = useState<'inbox' | 'envoi' | 'spam' | 'corbeille'>('inbox');
-  const [selectedMailBody, setSelectedMailBody] = useState('');
   const [isComposing, setIsComposing] = useState(false);
+
+  const [selectedMail, setSelectedMail] = useState({
+    id: "",
+    subject: "",
+    from: "",
+    to: "",
+    body: "",
+    attachments: [] as { filename: string; url: string }[]
+  });
+
+
+
+const deleteMail = async () => {
+  const token = localStorage.getItem("access_token");
+  if (!selectedMail.id) return;
+
+  await axios.post(
+    `http://localhost:3000/gmail/moveToTrash?access_token=${token}&id=${selectedMail.id}`
+  );
+
+  setSelectedMail({
+    id: "",
+    subject: "",
+    from: "",
+    to: "",
+    body: "",
+    attachments: []
+  });
+};
+
+
 
   return (
     <>
@@ -17,55 +49,72 @@ function App() {
 
       <div className="d-flex vh-100">
 
-        {/* SIDEBAR */}
-        <Sidebar
-          activeSection={activeSection}
-          setActiveSection={setActiveSection}
-          setIsComposing={setIsComposing}
-          setSelectedMailBody={setSelectedMailBody}
-        />
-
-        {/* LISTE DES MAILS */}
-          <div className="col-5 overflow-auto border-end">
-            {activeSection === 'inbox' && (
-              <MailList
-                setSelectedMailBody={setSelectedMailBody}
-                setIsComposing={setIsComposing}
-              />
-            )}
-
-            {activeSection === 'envoi' && (
-              <MailList
-                setSelectedMailBody={setSelectedMailBody}
-                setIsComposing={setIsComposing}
-                label="SENT"
-              />
-            )}
-
-            {activeSection === 'spam' && (
-              <MailList
-                setSelectedMailBody={setSelectedMailBody}
-                setIsComposing={setIsComposing}
-                label="SPAM"
-              />
-            )}
-
-            {activeSection === 'corbeille' && (
-              <MailList
-                setSelectedMailBody={setSelectedMailBody}
-                setIsComposing={setIsComposing}
-                label="TRASH"
-              />
-            )}
-          </div>
+      <Sidebar
+        activeSection={activeSection}
+        setActiveSection={setActiveSection}
+        setIsComposing={setIsComposing}
+        setSelectedMail={setSelectedMail}
+      />
 
 
-        {/* PANNEAU DE DROITE */}
+
+        <div className="col-5 overflow-auto border-end">
+          <MailList
+            setSelectedMail={setSelectedMail}
+            setIsComposing={setIsComposing}
+            label={
+              activeSection === "envoi" ? "SENT" :
+              activeSection === "spam" ? "SPAM" :
+              activeSection === "corbeille" ? "TRASH" :
+              undefined
+            }
+          />
+        </div>
+
         <div className="col-5 overflow-auto">
           {isComposing ? (
-            <MailComposer />
+            <MailComposer
+              initialTo={selectedMail.to}
+              initialSubject={selectedMail.subject}
+              initialBody={selectedMail.body}
+            />
+
           ) : (
-            <MailView body={selectedMailBody} />
+            <MailView
+              subject={selectedMail.subject}
+              from={selectedMail.from}
+              to={selectedMail.to}
+              body={selectedMail.body}
+              attachments={selectedMail.attachments}
+              
+              // répondre
+              onReply={() => {
+                setIsComposing(true);
+                setSelectedMail({
+                  id: "",
+                  subject: "Re: " + selectedMail.subject,
+                  from: "",
+                  to: selectedMail.from,
+                  body: `<br><br><blockquote style="border-left:2px solid #ccc;padding-left:10px;">${selectedMail.body}</blockquote>`,
+                  attachments: []
+                });
+              }}
+
+              // transférer
+              onForward={() => {
+                setIsComposing(true);
+                setSelectedMail({
+                  id: "",
+                  subject: "Fwd: " + selectedMail.subject,
+                  from: "",
+                  to: "",
+                  body: `<br><br><hr/>${selectedMail.body}`,
+                  attachments: []
+                });
+              }}
+
+              onDelete={deleteMail}
+            />
           )}
         </div>
 
@@ -73,5 +122,4 @@ function App() {
     </>
   );
 }
-
 export default App;
