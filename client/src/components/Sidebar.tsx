@@ -4,14 +4,22 @@ type SidebarProps = {
   activeSection: 'inbox' | 'envoi' | 'spam' | 'corbeille';
   setActiveSection: (section: 'inbox' | 'envoi' | 'spam' | 'corbeille') => void;
   setIsComposing: (value: boolean) => void;
-  setSelectedMailBody: (body: string) => void;
+  setSelectedMail: (mail: {
+    id: string;
+    subject: string;
+    from: string;
+    to: string;
+    body: string;
+    attachments: { filename: string; url: string }[];
+  }) => void;
 };
+
 
 const Sidebar = ({
   activeSection,
   setActiveSection,
   setIsComposing,
-  setSelectedMailBody,
+  setSelectedMail,
 }: SidebarProps) => {
   const isAuthenticated = !!localStorage.getItem('access_token');
 
@@ -61,7 +69,17 @@ const Sidebar = ({
           onClick={() => {
             setActiveSection('envoi');   // on se place dans la section Envoi
             setIsComposing(true);        // on affiche le composer
-            setSelectedMailBody('');     // on vide le contenu affiché
+            // On vide le mail sélectionné
+            setSelectedMail({
+              id: "",
+              subject: "",
+              from: "",
+              to: "",
+              body: "",
+              attachments: []
+            });
+
+
           }}
         >
           ✉️ Nouveau message

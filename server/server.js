@@ -2,12 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
+
 
 app.get('/auth/google', (req, res) => {
   const scope = encodeURIComponent([
@@ -67,18 +70,19 @@ app.get('/gmail/messages', async (req, res) => {
         );
 
         const headers = detailRes.data.payload.headers;
-
         const subject = headers.find(h => h.name === 'Subject')?.value || '(Sans sujet)';
         const from = headers.find(h => h.name === 'From')?.value || 'Expéditeur inconnu';
         const to = headers.find(h => h.name === 'To')?.value || '';
         const date = headers.find(h => h.name === 'Date')?.value || '';
+        const labelIdsMsg = detailRes.data.labelIds || [];
 
         return {
           id: msg.id,
           subject,
           from,
           to,
-          date
+          date,
+          labelIds: labelIdsMsg
         };
       })
     );
@@ -107,10 +111,14 @@ app.get('/gmail/message', async (req, res) => {
     );
 
     const payload = detailRes.data.payload;
+    const headers = payload.headers || [];
 
-    // Extraction directe sans fonction findBody
+    const subject = headers.find(h => h.name === 'Subject')?.value || '(Sans sujet)';
+    const from = headers.find(h => h.name === 'From')?.value || 'Expéditeur inconnu';
+    const to = headers.find(h => h.name === 'To')?.value || '';
+
+    // Corps
     let body = '';
-
     if (payload.body?.data) {
       body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
     } else if (payload.parts) {
@@ -125,7 +133,34 @@ app.get('/gmail/message', async (req, res) => {
       }
     }
 
-    res.json({ body });
+    // Pièces jointes
+    let attachments = [];
+
+    function extractAttachments(parts) {
+      if (!parts) return;
+      for (const part of parts) {
+        if (part.filename && part.body && part.body.attachmentId) {
+          attachments.push({
+            filename: part.filename,
+            mimeType: part.mimeType,
+            url: `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/attachments/${part.body.attachmentId}?access_token=${access_token}`
+          });
+        }
+        if (part.parts) extractAttachments(part.parts);
+      }
+    }
+
+    extractAttachments(payload.parts);
+
+    res.json({
+      id,
+      subject,
+      from,
+      to,
+      body,
+      attachments
+    });
+
   } catch (err) {
     console.error('[Backend] Erreur récupération corps mail:', err.response?.data || err.message);
     res.status(500).json({ error: err.message });
@@ -133,36 +168,149 @@ app.get('/gmail/message', async (req, res) => {
 });
 
 
+
 // Route pour envoyer un email
-app.post('/gmail/send', async (req, res) => {
-  const { access_token } = req.query;
-  const { to, subject, body } = req.body;
 
-  const rawMessage = [
-    `To: ${to}`,
-    'Content-Type: text/html; charset=UTF-8',
-    `Subject: ${subject}`,
-    '',
-    body, // HTML TinyMCE
-  ].join('\n');
-
-
-  const encodedMessage = Buffer.from(rawMessage)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
+app.post('/gmail/send', upload.array('attachments'), async (req, res) => {
   try {
+    const { access_token } = req.query;
+    const { to, subject, body } = req.body;
+    const files = req.files || [];
+
+    console.log("📨 Champs reçus :", req.body);
+    console.log("📎 Fichiers reçus :", files.map(f => f.originalname));
+
+    if (!to || !subject || !body) {
+      return res.status(400).json({ error: "Champs manquants" });
+    }
+
+    // Construction du message MIME
+    let boundary = "my_boundary_" + Date.now();
+
+    let mimeParts = [];
+
+    // Partie HTML
+    mimeParts.push(
+      `--${boundary}\r\n` +
+      `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+      `${body}\r\n`
+    );
+
+    // Pièces jointes
+    for (const file of files) {
+      const base64File = file.buffer.toString("base64");
+
+      mimeParts.push(
+        `--${boundary}\r\n` +
+        `Content-Type: ${file.mimetype}; name="${file.originalname}"\r\n` +
+        `Content-Disposition: attachment; filename="${file.originalname}"\r\n` +
+        `Content-Transfer-Encoding: base64\r\n\r\n` +
+        `${base64File}\r\n`
+      );
+    }
+
+    mimeParts.push(`--${boundary}--`);
+
+    const rawMessage =
+      `To: ${to}\r\n` +
+      `Subject: ${subject}\r\n` +
+      `MIME-Version: 1.0\r\n` +
+      `Content-Type: multipart/mixed; boundary="${boundary}"\r\n\r\n` +
+      mimeParts.join("");
+
+    const encodedMessage = Buffer.from(rawMessage)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+
+    // Envoi via Gmail API
     await axios.post(
-      'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages/send",
       { raw: encodedMessage },
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
+
+    res.json({ success: true });
+
+  } catch (err) {
+    console.error("[Backend] Erreur envoi mail:", err.response?.data || err);
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+
+
+
+const crypto = require("crypto");
+
+app.post('/scan', upload.single('file'), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "Aucun fichier reçu" });
+
+    // SHA‑256 du fichier
+    const sha256 = crypto.createHash("sha256").update(file.buffer).digest("hex");
+
+    // Upload VirusTotal
+    const formData = new FormData();
+    formData.append("file", new Blob([file.buffer]), file.originalname);
+
+    const uploadRes = await fetch("https://www.virustotal.com/api/v3/files", {
+      method: "POST",
+      headers: { "x-apikey": process.env.VIRUSTOTAL_API_KEY },
+      body: formData
+    });
+
+    const uploadData = await uploadRes.json();
+    const analysisId = uploadData.data.id;
+
+    // Polling en attendant la fin de l'analyse
+    let analysis;
+    while (true) {
+      const analysisRes = await fetch(
+        `https://www.virustotal.com/api/v3/analyses/${analysisId}`,
+        { headers: { "x-apikey": process.env.VIRUSTOTAL_API_KEY } }
+      );
+
+      const analysisData = await analysisRes.json();
+      if (analysisData.data.attributes.status === "completed") {
+        analysis = analysisData.data.attributes.stats;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+
+    const safe = analysis.malicious === 0 && analysis.suspicious === 0;
+
+    res.json({
+      safe,
+      stats: analysis,
+      sha256,
+      analysisId
+    });
+
+  } catch (err) {
+    console.error("Erreur VirusTotal:", err);
+    res.status(500).json({ error: "Erreur analyse VirusTotal" });
+  }
+});
+
+
+app.post('/gmail/moveToTrash', async (req, res) => {
+  const { access_token, id } = req.query;
+
+  try {
+    await axios.post(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}/trash`,
+      {},
+      { headers: { Authorization: `Bearer ${access_token}` } }
+    );
+
     res.json({ success: true });
   } catch (err) {
-    console.error('[Backend] Erreur envoi mail:', err.response?.data || err.message);
-    res.status(500).json({ error: err.message });
+    console.error("Erreur suppression:", err.response?.data || err);
+    res.status(500).json({ error: "Erreur suppression" });
   }
 });
 
