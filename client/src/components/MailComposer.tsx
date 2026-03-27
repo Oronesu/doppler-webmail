@@ -3,17 +3,28 @@ import { useState } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import Modal from "./Modal";
 
+type SendStatus = 'idle' | 'sending' | 'success' | 'error';
+
 const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" }) => {
   const [to, setTo] = useState(initialTo);
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(initialBody);
   const [attachments, setAttachments] = useState<File[]>([]);
-  const [scanRequested, setScanRequested] = useState(true);
-  const [scanResults, setScanResults] = useState<Array<{ file: File; safe: boolean; stats: any; sha256: string; analysisId: string }>>([]);
-  const [showPrivacyPopup, setShowPrivacyPopup] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [sendCompleted, setSendCompleted] = useState(false);
 
+  // VirusTotal OFF par défaut
+  const [scanEnabled, setScanEnabled] = useState(false);
+
+  // Modal affiché quand on coche VirusTotal (avertissement confidentialité)
+  const [showVtWarning, setShowVtWarning] = useState(false);
+
+  // Modal confidentialité avant envoi avec scan (quand on clique Envoyer)
+  const [showPrivacyPopup, setShowPrivacyPopup] = useState(false);
+
+  // État d'envoi : idle | sending | success | error
+  const [sendStatus, setSendStatus] = useState<SendStatus>('idle');
+  const [sendError, setSendError] = useState('');
+
+  // — Scan VirusTotal —
   const scanFile = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -29,91 +40,164 @@ const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" })
       const result = await scanFile(file);
       results.push({ file, safe: result.safe, stats: result.stats, sha256: result.sha256, analysisId: result.analysisId });
     }
-    setScanResults(results);
     return results;
   };
 
-  const handleSend = async (confirmed: boolean) => {
-    const token = localStorage.getItem("access_token");
-    if (scanRequested && attachments.length > 0 && !confirmed) return;
-
-    setIsSending(true);
-    setSendCompleted(false);
-
-    let allSafe = true;
-    let results: any[] = [];
-
-    if (scanRequested && attachments.length > 0) {
-      results = await verifyAllAttachments();
-      allSafe = results.every((r) => r.safe);
-      if (!allSafe) { setIsSending(false); return; }
+  // — Envoi —
+  const handleSend = async () => {
+    // Validation basique côté client
+    if (!to.trim()) {
+      setSendError("Veuillez renseigner un destinataire.");
+      setSendStatus('error');
+      return;
     }
 
-    let finalBody = body;
-    if (scanRequested && allSafe && results.length > 0) {
-      finalBody += `
-        <h3>Pièces jointes vérifiées avec VirusTotal</h3>
-        ${results.map((r) => `
-          <p>
-            Rapport : <a href="https://www.virustotal.com/gui/file-analysis/${r.analysisId}" target="_blank">Voir l'analyse</a><br/>
-            SHA‑256 : <code>${r.sha256}</code>
-          </p>
-        `).join("")}
-      `;
+    setSendStatus('sending');
+    setSendError('');
+
+    try {
+      const token = localStorage.getItem("access_token");
+      let finalBody = body;
+      let results: any[] = [];
+
+      if (scanEnabled && attachments.length > 0) {
+        results = await verifyAllAttachments();
+        const allSafe = results.every((r) => r.safe);
+        if (!allSafe) {
+          setSendError("Un ou plusieurs fichiers ont été détectés comme malveillants. Envoi annulé.");
+          setSendStatus('error');
+          return;
+        }
+        finalBody += `
+          <h3>Pièces jointes vérifiées avec VirusTotal</h3>
+          ${results.map((r) => `
+            <p>
+              Rapport : <a href="https://www.virustotal.com/gui/file-analysis/${r.analysisId}" target="_blank">Voir l'analyse</a><br/>
+              SHA‑256 : <code>${r.sha256}</code>
+            </p>
+          `).join("")}
+        `;
+      }
+
+      const formData = new FormData();
+      formData.append("to", to);
+      formData.append("subject", subject);
+      formData.append("body", finalBody);
+      attachments.forEach((file) => formData.append("attachments", file));
+
+      await axios.post(
+        `http://localhost:3000/gmail/send?access_token=${token}`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      setTo(""); setSubject(""); setBody(""); setAttachments([]);
+      setSendStatus('success');
+
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || "Erreur lors de l'envoi.";
+      setSendError(msg);
+      setSendStatus('error');
     }
+  };
 
-    const formData = new FormData();
-    formData.append("to", to);
-    formData.append("subject", subject);
-    formData.append("body", finalBody);
-    attachments.forEach((file) => formData.append("attachments", file));
+  const closeSendModal = () => {
+    setSendStatus('idle');
+    setSendError('');
+  };
 
-    await axios.post(
-      `http://localhost:3000/gmail/send?access_token=${token}`,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
+  // Quand on coche la case VirusTotal
+  const handleVtToggle = () => {
+    if (!scanEnabled) {
+      // On active → on montre l'avertissement d'abord
+      setShowVtWarning(true);
+    } else {
+      // On désactive directement
+      setScanEnabled(false);
+    }
+  };
 
-    setTo(""); setSubject(""); setBody(""); setAttachments([]); setScanResults([]);
-    setSendCompleted(true);
+  // Quand on clique Envoyer
+  const handleSendClick = () => {
+    if (scanEnabled && attachments.length > 0) {
+      // Confirmation confidentialité avant d'envoyer vers VirusTotal
+      setShowPrivacyPopup(true);
+    } else {
+      handleSend();
+    }
   };
 
   return (
     <>
-      {/* MODAL CONFIDENTIALITÉ */}
-      {showPrivacyPopup && (
+      {/* — MODAL AVERTISSEMENT ACTIVATION VT — */}
+      {showVtWarning && (
         <Modal>
-          <button className="modal-close" onClick={() => setShowPrivacyPopup(false)}>×</button>
+          <button className="modal-close" onClick={() => setShowVtWarning(false)}>×</button>
           <h4>Vérification VirusTotal</h4>
           <p>
-            La vérification des pièces jointes utilise l'API VirusTotal.
-            Les fichiers envoyés peuvent être conservés par des partenaires antivirus.
-            N'utilisez cette option que si les pièces jointes ne contiennent pas de données personnelles.
+            La vérification utilise l'API VirusTotal, un service tiers.
+            Les fichiers analysés peuvent être accessibles aux partenaires antivirus de VirusTotal.
+          </p>
+          <p style={{ marginTop: 10 }}>
+            <strong>N'activez cette option que si vos pièces jointes ne contiennent pas de données sensibles ou personnelles.</strong>
           </p>
           <div className="modal-actions">
-            <button className="btn btn-secondary" onClick={() => setShowPrivacyPopup(false)}>Annuler</button>
-            <button className="btn btn-primary" onClick={() => { setShowPrivacyPopup(false); handleSend(true); }}>
-              Confirmer
+            <button className="btn btn-secondary" onClick={() => setShowVtWarning(false)}>
+              Annuler
+            </button>
+            <button className="btn btn-primary" onClick={() => { setScanEnabled(true); setShowVtWarning(false); }}>
+              Activer quand même
             </button>
           </div>
         </Modal>
       )}
 
-      {/* MODAL ENVOI */}
-      {isSending && (
+      {/* — MODAL CONFIRMATION CONFIDENTIALITÉ AVANT ENVOI — */}
+      {showPrivacyPopup && (
         <Modal>
-          {!sendCompleted ? (
-            <h4>{scanRequested ? "Vérification et envoi..." : "Envoi..."}</h4>
-          ) : (
+          <button className="modal-close" onClick={() => setShowPrivacyPopup(false)}>×</button>
+          <h4>Confirmer l'envoi avec scan</h4>
+          <p>
+            Vos pièces jointes vont être transmises à VirusTotal pour analyse avant envoi.
+            Confirmez que ces fichiers ne contiennent pas d'informations sensibles.
+          </p>
+          <div className="modal-actions">
+            <button className="btn btn-secondary" onClick={() => setShowPrivacyPopup(false)}>
+              Annuler
+            </button>
+            <button className="btn btn-primary" onClick={() => { setShowPrivacyPopup(false); handleSend(); }}>
+              Confirmer et envoyer
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* — MODAL ENVOI EN COURS / SUCCÈS / ERREUR — */}
+      {sendStatus !== 'idle' && (
+        <Modal>
+          {sendStatus === 'sending' && (
+            <h4>{scanEnabled && attachments.length > 0 ? "Vérification et envoi..." : "Envoi en cours..."}</h4>
+          )}
+          {sendStatus === 'success' && (
             <>
-              <button className="modal-close" onClick={() => { setIsSending(false); setSendCompleted(false); }}>×</button>
+              <button className="modal-close" onClick={closeSendModal}>×</button>
               <h4>Mail envoyé</h4>
+            </>
+          )}
+          {sendStatus === 'error' && (
+            <>
+              <button className="modal-close" onClick={closeSendModal}>×</button>
+              <h4>Échec de l'envoi</h4>
+              <p style={{ marginTop: 8 }}>{sendError}</p>
+              <div className="modal-actions">
+                <button className="btn btn-secondary" onClick={closeSendModal}>Fermer</button>
+              </div>
             </>
           )}
         </Modal>
       )}
 
-      {/* FORMULAIRE */}
+      {/* — FORMULAIRE — */}
       <div className="composer-topbar">
         <div className="left">
           <h5>Nouveau message</h5>
@@ -143,9 +227,20 @@ const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" })
             menubar: false,
             plugins: "link lists code table autolink preview",
             toolbar: "undo redo | bold italic underline | bullist numlist | link | code | preview",
-            content_style: "body { font-family:'DM Sans',sans-serif; font-size:14px; color:#f0edf5; background:transparent; }",
+            // Skin dark natif TinyMCE — texte blanc lisible
             skin: "oxide-dark",
             content_css: "dark",
+            // Style injecté dans l'iframe TinyMCE pour que le texte soit lisible
+            content_style: `
+              body {
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 14px;
+                color: #e8e4f0;
+                background: #1e1c26;
+                margin: 12px 16px;
+                line-height: 1.6;
+              }
+            `,
           }}
         />
 
@@ -162,23 +257,14 @@ const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" })
             <label className="vt-check">
               <input
                 type="checkbox"
-                checked={scanRequested}
-                onChange={() => setScanRequested(!scanRequested)}
+                checked={scanEnabled}
+                onChange={handleVtToggle}
               />
               Vérifier avec VirusTotal
             </label>
           </div>
 
-          <button
-            className="btn-send"
-            onClick={() => {
-              if (scanRequested && attachments.length > 0) {
-                setShowPrivacyPopup(true);
-              } else {
-                handleSend(false);
-              }
-            }}
-          >
+          <button className="btn-send" onClick={handleSendClick}>
             Envoyer
           </button>
         </div>
