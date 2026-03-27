@@ -14,6 +14,12 @@ type SidebarProps = {
   }) => void;
 };
 
+const navItems: { key: 'inbox' | 'envoi' | 'spam' | 'corbeille'; label: string; icon: string }[] = [
+  { key: 'inbox',     label: 'Inbox',     icon: '↓' },
+  { key: 'envoi',     label: 'Envoyés',   icon: '↑' },
+  { key: 'spam',      label: 'Spam',      icon: '!' },
+  { key: 'corbeille', label: 'Corbeille', icon: '×' },
+];
 
 const Sidebar = ({
   activeSection,
@@ -24,69 +30,40 @@ const Sidebar = ({
   const isAuthenticated = !!localStorage.getItem('access_token');
 
   return (
-    <div className="d-flex flex-column justify-content-between vh-100 bg-dark text-white p-3">
+    <div className="sidebar">
       <div>
-        <div className="mb-4 fw-bold">📩 LOGO</div>
+        <div className="sidebar-logo">Webmail</div>
 
         <button
-          className={`btn btn-sm w-100 text-start mb-2 ${
-            activeSection === 'inbox' ? 'btn-primary' : 'btn-outline-light'
-          }`}
-          onClick={() => setActiveSection('inbox')}
-        >
-          Inbox
-        </button>
-
-        <button
-          className={`btn btn-sm w-100 text-start mb-2 ${
-            activeSection === 'envoi' ? 'btn-primary' : 'btn-outline-light'
-          }`}
-          onClick={() => setActiveSection('envoi')}
-        >
-          Envoi
-        </button>
-
-        <button
-          className={`btn btn-sm w-100 text-start mb-2 ${
-            activeSection === 'spam' ? 'btn-primary' : 'btn-outline-light'
-          }`}
-          onClick={() => setActiveSection('spam')}
-        >
-          Spam
-        </button>
-
-        <button
-          className={`btn btn-sm w-100 text-start mb-2 ${
-            activeSection === 'corbeille' ? 'btn-primary' : 'btn-outline-light'
-          }`}
-          onClick={() => setActiveSection('corbeille')}
-        >
-          Corbeille
-        </button>
-
-        <button
-          className="btn btn-primary w-100 mb-3"
+          className="btn-compose"
           onClick={() => {
-            setActiveSection('envoi');   // on se place dans la section Envoi
-            setIsComposing(true);        // on affiche le composer
-            // On vide le mail sélectionné
-            setSelectedMail({
-              id: "",
-              subject: "",
-              from: "",
-              to: "",
-              body: "",
-              attachments: []
-            });
-
-
+            setActiveSection('envoi');
+            setIsComposing(true);
+            setSelectedMail({ id: '', subject: '', from: '', to: '', body: '', attachments: [] });
           }}
         >
-          ✉️ Nouveau message
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+          </svg>
+          Nouveau message
         </button>
+
+        <nav className="sidebar-nav">
+          {navItems.map(({ key, label, icon }) => (
+            <button
+              key={key}
+              className={`sidebar-btn${activeSection === key ? ' active' : ''}`}
+              onClick={() => setActiveSection(key)}
+            >
+              <span className="nav-icon">{icon}</span>
+              {label}
+            </button>
+          ))}
+        </nav>
       </div>
 
       <button
+        className="btn-auth"
         onClick={() => {
           if (isAuthenticated) {
             localStorage.removeItem('access_token');
@@ -95,9 +72,8 @@ const Sidebar = ({
             window.location.href = 'http://localhost:3000/auth/google';
           }
         }}
-        className="btn btn-primary mt-auto"
       >
-        {isAuthenticated ? 'Se déconnecter' : 'Se connecter avec Gmail'}
+        {isAuthenticated ? 'Se déconnecter' : 'Connexion Gmail'}
       </button>
     </div>
   );

@@ -6,6 +6,7 @@ import AuthHandler from './components/AuthHandler';
 import MailComposer from './components/MailComposer';
 import './App.css';
 import axios from 'axios';
+import SentList from './components/SentList';
 
 
 function App() {
@@ -47,7 +48,7 @@ const deleteMail = async () => {
     <>
       <AuthHandler />
 
-      <div className="d-flex vh-100">
+      <div className="main-layout">
 
       <Sidebar
         activeSection={activeSection}
@@ -58,20 +59,29 @@ const deleteMail = async () => {
 
 
 
-        <div className="col-5 overflow-auto border-end">
+      <div className="panel">
+        {activeSection === "envoi" ? (
+          <SentList
+            setSelectedMail={setSelectedMail}
+            setIsComposing={setIsComposing}
+          />
+
+        ) : (
           <MailList
             setSelectedMail={setSelectedMail}
             setIsComposing={setIsComposing}
             label={
-              activeSection === "envoi" ? "SENT" :
               activeSection === "spam" ? "SPAM" :
               activeSection === "corbeille" ? "TRASH" :
               undefined
             }
           />
-        </div>
+        )}
+      </div>
 
-        <div className="col-5 overflow-auto">
+
+
+        <div className="panel">
           {isComposing ? (
             <MailComposer
               initialTo={selectedMail.to}
