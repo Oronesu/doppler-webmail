@@ -56,7 +56,6 @@ const MailComposer = ({ initialTo = "", initialSubject = "", initialBody = "" })
     setSendError('');
 
     try {
-      const token = localStorage.getItem("access_token");
       let finalBody = body;
       let results: any[] = [];
 

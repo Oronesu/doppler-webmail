@@ -65,7 +65,6 @@ const SentList = ({ setSelectedMail, setIsComposing }: SentListProps) => {
 
   const handleClick = async (id: string) => {
     setIsComposing(false);
-    const token = localStorage.getItem('access_token');
     const res = await api.get('/gmail/message', { params: { id } });
     setSelectedMail({
       id: res.data.id,
