@@ -6,7 +6,14 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',   // Vite dev
+    'http://localhost:4173',   // Vite preview
+    process.env.CLIENT_URL,    // URL Railway du frontend en prod
+  ].filter(Boolean),
+  credentials: true
+}));
 app.use(express.json());
 
 const { CLIENT_ID, CLIENT_SECRET, REDIRECT_URI } = process.env;
@@ -422,4 +429,5 @@ app.get('/gmail/attachment', async (req, res) => {
   }
 });
 
-app.listen(3000, () => console.log('✅ Backend running on http://localhost:3000'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Backend running on port ${PORT}`));
