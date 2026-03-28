@@ -29,6 +29,20 @@ app.get('/auth/google', (req, res) => {
   res.redirect(url);
 });
 
+// Route de callback OAuth — Google redirige ici après connexion
+// On redirige vers le frontend avec le code en query param
+app.get('/auth/callback', (req, res) => {
+  const { code, error } = req.query;
+  const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
+  if (error) {
+    return res.redirect(`${clientUrl}/?error=${error}`);
+  }
+
+  // Redirige vers le frontend avec le code — AuthHandler.tsx s'en occupe
+  res.redirect(`${clientUrl}/?code=${code}`);
+});
+
 app.post('/auth/token', async (req, res) => {
   const { code } = req.body;
   console.log('[Backend] Code reçu:', code);
