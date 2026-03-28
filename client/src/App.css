@@ -56,16 +56,12 @@
   pour qu'ils ne héritent pas de "transparent".
 */
 .sidebar-logo {
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 6px 12px 20px;
+  padding: 4px 8px 20px;
   display: block;
-  background: var(--grad);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+}
+.sidebar-logo img {
+  width: 100% !important;
+  max-width: none !important;
 }
 
 .sidebar-nav {
@@ -607,4 +603,257 @@
      Le parent overflow-y: auto scrolle si ça dépasse le viewport. */
   height: 0;
   background: #fff;
+}
+
+/* ─── UNREAD / REFRESH ────────────────────────────────────────────────── */
+
+/* Mail non lu dans la liste */
+.mail-item--unread {
+  background: rgba(232, 48, 90, 0.055);
+}
+.mail-item--unread:hover {
+  background: rgba(232, 48, 90, 0.10);
+}
+.mail-item--unread .mail-item-subject {
+  font-weight: 600;
+}
+.mail-item--unread .mail-item-from {
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+
+/* Topbar de la liste : espace entre titre et actions droite */
+.maillist-title {
+  justify-content: space-between;
+}
+.maillist-title-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Badge non lus dans la topbar liste */
+.unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--grad);
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Bouton refresh dans la topbar */
+.refresh-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  -webkit-text-fill-color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.refresh-btn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+.refresh-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Badge non lus dans la sidebar (à côté de "Inbox") */
+.sidebar-btn {
+  /* déjà défini, on ajoute juste justify-content pour pousser le badge à droite */
+  justify-content: flex-start;
+}
+.nav-label {
+  flex: 1;
+}
+.sidebar-unread-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--grad);
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  font-size: 10.5px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+/* ─── RECHERCHE ───────────────────────────────────────────────────────── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+.search-input::placeholder { color: var(--text-muted); }
+
+.search-clear {
+  background: none;
+  border: none;
+  padding: 3px;
+  color: var(--text-muted);
+  -webkit-text-fill-color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  transition: color 0.12s;
+}
+.search-clear:hover { color: var(--text-primary); -webkit-text-fill-color: var(--text-primary); }
+
+.search-submit {
+  background: var(--grad-soft);
+  border: 1px solid rgba(232,48,90,0.2);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, color 0.12s;
+}
+.search-submit:hover {
+  background: var(--grad);
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+}
+
+/* Bandeau recherche active */
+.search-active-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 14px;
+  background: var(--grad-soft);
+  border-bottom: 1px solid rgba(232,48,90,0.15);
+  font-size: 12px;
+  color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
+}
+.search-active-bar strong {
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+.search-active-bar button {
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--text-muted);
+  -webkit-text-fill-color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.12s;
+}
+.search-active-bar button:hover {
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+
+/* ─── SNIPPET ─────────────────────────────────────────────────────────── */
+.mail-item-snippet {
+  font-size: 12px;
+  color: var(--text-muted);
+  -webkit-text-fill-color: var(--text-muted);
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── CHARGER PLUS / FIN ──────────────────────────────────────────────── */
+.scroll-sentinel {
+  /* pas de padding : le bouton prend toute la largeur */
+}
+.maillist-end {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  -webkit-text-fill-color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  border-top: 1px solid rgba(232,48,90,0.2);
+  background: var(--grad-soft);
+  color: var(--text-secondary);
+  -webkit-text-fill-color: var(--text-secondary);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, color 0.15s;
+}
+.load-more-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(232,48,90,0.25) 0%, rgba(160,32,200,0.25) 100%);
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
+}
+.load-more-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* Animation spin pour le refresh */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 0.7s linear infinite;
+}
+
+/* Bouton action actif dans la topbar mail (ex: état "non lu") */
+.mailview-topbar .actions .btn-action--active {
+  background: var(--grad-soft);
+  border-color: rgba(232,48,90,0.3);
+  color: var(--text-primary);
+  -webkit-text-fill-color: var(--text-primary);
 }

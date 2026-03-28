@@ -1,20 +1,20 @@
 import './Sidebar.css';
 
+type Section = 'inbox' | 'envoi' | 'spam' | 'corbeille';
+
 type SidebarProps = {
-  activeSection: 'inbox' | 'envoi' | 'spam' | 'corbeille';
-  setActiveSection: (section: 'inbox' | 'envoi' | 'spam' | 'corbeille') => void;
+  activeSection: Section;
+  setActiveSection: (section: Section) => void;
   setIsComposing: (value: boolean) => void;
   setSelectedMail: (mail: {
-    id: string;
-    subject: string;
-    from: string;
-    to: string;
-    body: string;
+    id: string; subject: string; from: string;
+    to: string; body: string;
     attachments: { filename: string; url: string }[];
   }) => void;
+  unreadCount: number;
 };
 
-const navItems: { key: 'inbox' | 'envoi' | 'spam' | 'corbeille'; label: string; icon: string }[] = [
+const navItems: { key: Section; label: string; icon: string }[] = [
   { key: 'inbox',     label: 'Inbox',     icon: '↓' },
   { key: 'envoi',     label: 'Envoyés',   icon: '↑' },
   { key: 'spam',      label: 'Spam',      icon: '!' },
@@ -26,13 +26,16 @@ const Sidebar = ({
   setActiveSection,
   setIsComposing,
   setSelectedMail,
+  unreadCount,
 }: SidebarProps) => {
   const isAuthenticated = !!localStorage.getItem('access_token');
 
   return (
     <div className="sidebar">
       <div>
-        <div className="sidebar-logo">Webmail</div>
+        <div className="sidebar-logo">
+          <img src="/logo.svg" alt="Doppler Webmail" style={{ width: '100%', display: 'block' }} />
+        </div>
 
         <button
           className="btn-compose"
@@ -56,7 +59,11 @@ const Sidebar = ({
               onClick={() => setActiveSection(key)}
             >
               <span className="nav-icon">{icon}</span>
-              {label}
+              <span className="nav-label">{label}</span>
+              {/* Badge non lus uniquement sur Inbox */}
+              {key === 'inbox' && unreadCount > 0 && (
+                <span className="sidebar-unread-badge">{unreadCount}</span>
+              )}
             </button>
           ))}
         </nav>
