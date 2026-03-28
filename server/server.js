@@ -173,20 +173,34 @@ app.get('/gmail/message', async (req, res) => {
     const from = headers.find(h => h.name === 'From')?.value || 'Expéditeur inconnu';
     const to = headers.find(h => h.name === 'To')?.value || '';
 
-    // Corps
+    // Corps — extraction récursive pour gérer multipart/mixed > multipart/alternative > text/html
     let body = '';
-    if (payload.body?.data) {
-      body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
-    } else if (payload.parts) {
-      for (const part of payload.parts) {
-        if (part.mimeType === 'text/html' && part.body?.data) {
+
+    function extractBody(part) {
+      // Corps direct sur le payload
+      if (part.body?.data && !part.parts) {
+        if (part.mimeType === 'text/html') {
           body = Buffer.from(part.body.data, 'base64').toString('utf-8');
-          break;
+          return true; // trouvé HTML, on arrête
         }
-        if (part.mimeType === 'text/plain' && part.body?.data && !body) {
+        if (part.mimeType === 'text/plain' && !body) {
           body = Buffer.from(part.body.data, 'base64').toString('utf-8');
+          // on continue quand même au cas où il y a du HTML plus loin
         }
       }
+      // Récursion dans les sous-parties
+      if (part.parts) {
+        for (const subPart of part.parts) {
+          if (extractBody(subPart)) return true;
+        }
+      }
+      return false;
+    }
+
+    if (payload.body?.data) {
+      body = Buffer.from(payload.body.data, 'base64').toString('utf-8');
+    } else {
+      extractBody(payload);
     }
 
     // Pièces jointes
@@ -199,7 +213,7 @@ app.get('/gmail/message', async (req, res) => {
           attachments.push({
             filename: part.filename,
             mimeType: part.mimeType,
-            url: `http://localhost:3000/gmail/attachment?access_token=${access_token}&messageId=${id}&attachmentId=${part.body.attachmentId}&filename=${encodeURIComponent(part.filename)}&mimeType=${encodeURIComponent(part.mimeType)}`
+            url: `${process.env.RAILWAY_PUBLIC_DOMAIN ? 'https://' + process.env.RAILWAY_PUBLIC_DOMAIN : 'http://localhost:3000'}/gmail/attachment?access_token=${access_token}&messageId=${id}&attachmentId=${part.body.attachmentId}&filename=${encodeURIComponent(part.filename)}&mimeType=${encodeURIComponent(part.mimeType)}`
           });
         }
         if (part.parts) extractAttachments(part.parts);
