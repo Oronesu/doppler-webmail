@@ -76,7 +76,7 @@ const Sidebar = ({
             localStorage.removeItem('access_token');
             window.location.href = '/';
           } else {
-            window.location.href = 'http://localhost:3000/auth/google';
+            window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/google`;
           }
         }}
       >

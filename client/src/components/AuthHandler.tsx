@@ -7,7 +7,7 @@ const AuthHandler = () => {
     const code = urlParams.get('code');
     if (!code) return;
 
-    axios.post('http://localhost:3000/auth/token', { code })
+    axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/auth/token`, { code })
       .then(res => {
         const { access_token, refresh_token, expires_in } = res.data;
         if (access_token) {
