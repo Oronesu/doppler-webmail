@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 
-const BASE = 'http://localhost:3000';
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 // Instance axios partagée
 const api = axios.create({ baseURL: BASE });
