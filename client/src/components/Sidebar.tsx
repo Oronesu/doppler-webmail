@@ -33,7 +33,9 @@ const Sidebar = ({
   return (
     <div className="sidebar">
       <div>
-        <div className="sidebar-logo">Webmail</div>
+        <div className="sidebar-logo">
+          <img src="/logo.svg" alt="Doppler Webmail" style={{ width: '100%', display: 'block' }} />
+        </div>
 
         <button
           className="btn-compose"
