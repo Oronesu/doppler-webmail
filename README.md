@@ -28,7 +28,7 @@ npm install
 ```
 
 ### 3. Créer le fichier .env
-Dans le dossier server, crée un fichier .env :
+Dans le dossier server, créez un fichier .env :
 
 ```env
 CLIENT_ID=xxx.apps.googleusercontent.com
@@ -48,9 +48,9 @@ Cela démarre le frontend et le backend en parallèle grâce à concurrently.
 ## 🔐 Authentification OAuth2
 L’app utilise OAuth2 pour se connecter à Gmail
 
-Tu dois créer un projet Google Cloud et des identifiants OAuth2
+Vous devez créer un projet Google Cloud et des identifiants OAuth2
 
-Ajoute ton compte Gmail comme utilisateur testeur dans l’écran d’autorisation
+Ajoute votre compte Gmail comme utilisateur testeur dans l’écran d’autorisation
 
 ## 🧪 Fonctionnalités
 Connexion sécurisée via Google
